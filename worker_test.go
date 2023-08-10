@@ -29,12 +29,29 @@ func TestNormal(t *testing.T) {
 
 func TestWorkerPool(t *testing.T) {
 	wp := NewWorkerPool(5)
+	//开启数据
 	go func() {
 		wp.Run(context.TODO())
 	}()
+	//等待线程池的创建
+	time.Sleep(2 * time.Second)
 	fns := mockTasks(10)
-	for _, fn := range fns {
-		wp.Execute(fn)
+	for i, fn := range fns {
+		wp.Execute(i%wp.workerNum, fn)
 	}
-	time.Sleep(time.Minute)
+	time.Sleep(time.Second)
+}
+
+func BenchmarkWorkerPool_Execute(b *testing.B) {
+	wp := NewWorkerPool(5)
+	go func() {
+		wp.Run(context.TODO())
+	}()
+	//等待线程池的创建
+	time.Sleep(time.Second)
+	fns := mockTasks(1000)
+	for i, fn := range fns {
+		wp.Execute(i%wp.workerNum, fn)
+	}
+	//time.Sleep(time.Second)
 }

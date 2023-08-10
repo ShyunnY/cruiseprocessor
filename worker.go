@@ -7,6 +7,7 @@ import (
 const (
 	defaultPoolSize  = 1000
 	defaultWorkerNum = 2
+	//defaultPoolLen==defaultWorkerNum
 )
 
 type placeHolder struct{}
@@ -15,7 +16,7 @@ type task func() error
 type Result interface{}
 
 type WorkerPool struct {
-	pool      chan task
+	poolList  []chan task
 	workerNum int
 
 	closeCh chan placeHolder
@@ -26,7 +27,7 @@ type WorkerPool struct {
 func NewWorkerPool(workNum int) *WorkerPool {
 	return &WorkerPool{
 		workerNum: workNum,
-		pool:      make(chan task, defaultPoolSize),
+		poolList:  make([]chan task, workNum),
 		closeCh:   make(chan placeHolder),
 		errCh:     make(chan error),
 	}
@@ -35,7 +36,9 @@ func NewWorkerPool(workNum int) *WorkerPool {
 func (wp *WorkerPool) Run(ctx context.Context) (err error) {
 	// run all worker
 	for i := 0; i < wp.workerNum; i++ {
-		go wp.work()
+		//创建线程对应通道
+		wp.poolList[i] = make(chan task, defaultPoolSize)
+		go wp.work(wp.poolList[i])
 	}
 
 	select {
@@ -50,14 +53,17 @@ func (wp *WorkerPool) ResultChan() <-chan Result {
 	return wp.resCh
 }
 
-func (wp *WorkerPool) Execute(t func() error) {
-	wp.pool <- t
+func (wp *WorkerPool) Execute(chanId int, t func() error) {
+	// TODO: 匹配调度算法 ==> chanId int
+	//对应管道内的数据
+	wp.poolList[chanId] <- t
 }
 
-func (wp *WorkerPool) work() {
+func (wp *WorkerPool) work(pool chan task) {
 	for {
 		select {
-		case t := <-wp.pool:
+		//取得对应管道内的数据
+		case t := <-pool:
 			// TODO: consider how to wrap errors
 			if err := t(); err != nil {
 				wp.errCh <- err
