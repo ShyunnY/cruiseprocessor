@@ -70,7 +70,8 @@ func (cp *cruiseProcessor) Capabilities() consumer.Capabilities {
 }
 
 func (cp *cruiseProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) (err error) {
-	cp.pool.Execute(func() error {
+	// TODO : Need to supplement the number for polling allocation
+	cp.pool.Execute(1, func() error {
 		td.ResourceSpans().RemoveIf(func(rss ptrace.ResourceSpans) bool {
 			rss.ScopeSpans().RemoveIf(func(sps ptrace.ScopeSpans) bool {
 				sps.Spans().RemoveIf(func(sp ptrace.Span) bool {

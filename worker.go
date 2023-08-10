@@ -5,7 +5,8 @@ import (
 )
 
 const (
-	defaultPoolSize  = 1000
+	defaultPoolSize = 1000
+	//defaultPoolLen==defaultWorkerNum
 	defaultWorkerNum = 2
 )
 
@@ -15,7 +16,7 @@ type task func() error
 type Result interface{}
 
 type WorkerPool struct {
-	pool      chan task
+	poolList  []chan task
 	workerNum int
 
 	closeCh chan placeHolder
@@ -26,7 +27,7 @@ type WorkerPool struct {
 func NewWorkerPool(workNum int) *WorkerPool {
 	return &WorkerPool{
 		workerNum: workNum,
-		pool:      make(chan task, defaultPoolSize),
+		poolList:  make([]chan task, workNum),
 		closeCh:   make(chan placeHolder),
 		errCh:     make(chan error),
 	}
@@ -35,7 +36,9 @@ func NewWorkerPool(workNum int) *WorkerPool {
 func (wp *WorkerPool) Run(ctx context.Context) (err error) {
 	// run all worker
 	for i := 0; i < wp.workerNum; i++ {
-		go wp.work()
+		//Create thread corresponding channel
+		wp.poolList[i] = make(chan task, defaultPoolSize)
+		go wp.work(wp.poolList[i])
 	}
 
 	select {
@@ -50,14 +53,17 @@ func (wp *WorkerPool) ResultChan() <-chan Result {
 	return wp.resCh
 }
 
-func (wp *WorkerPool) Execute(t func() error) {
-	wp.pool <- t
+func (wp *WorkerPool) Execute(chanId int, t func() error) {
+	// TODO: Matching scheduling algorithm (chanId int)
+	//Corresponding data in the pipeline
+	wp.poolList[chanId] <- t
 }
 
-func (wp *WorkerPool) work() {
+func (wp *WorkerPool) work(pool chan task) {
 	for {
 		select {
-		case t := <-wp.pool:
+		//Obtain data from the corresponding pipeline
+		case t := <-pool:
 			// TODO: consider how to wrap errors
 			if err := t(); err != nil {
 				wp.errCh <- err
