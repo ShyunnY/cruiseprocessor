@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	defaultPoolSize  = 1000
-	defaultWorkerNum = 2
+	defaultPoolSize = 1000
 	//defaultPoolLen==defaultWorkerNum
+	defaultWorkerNum = 2
 )
 
 type placeHolder struct{}
@@ -36,7 +36,7 @@ func NewWorkerPool(workNum int) *WorkerPool {
 func (wp *WorkerPool) Run(ctx context.Context) (err error) {
 	// run all worker
 	for i := 0; i < wp.workerNum; i++ {
-		//创建线程对应通道
+		//Create thread corresponding channel
 		wp.poolList[i] = make(chan task, defaultPoolSize)
 		go wp.work(wp.poolList[i])
 	}
@@ -54,15 +54,15 @@ func (wp *WorkerPool) ResultChan() <-chan Result {
 }
 
 func (wp *WorkerPool) Execute(chanId int, t func() error) {
-	// TODO: 匹配调度算法 ==> chanId int
-	//对应管道内的数据
+	// TODO: Matching scheduling algorithm (chanId int)
+	//Corresponding data in the pipeline
 	wp.poolList[chanId] <- t
 }
 
 func (wp *WorkerPool) work(pool chan task) {
 	for {
 		select {
-		//取得对应管道内的数据
+		//Obtain data from the corresponding pipeline
 		case t := <-pool:
 			// TODO: consider how to wrap errors
 			if err := t(); err != nil {

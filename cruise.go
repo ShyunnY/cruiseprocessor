@@ -70,7 +70,7 @@ func (cp *cruiseProcessor) Capabilities() consumer.Capabilities {
 }
 
 func (cp *cruiseProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) (err error) {
-	// TODO : 这里需要补充编号进行轮询分配
+	// TODO : Need to supplement the number for polling allocation
 	cp.pool.Execute(1, func() error {
 		td.ResourceSpans().RemoveIf(func(rss ptrace.ResourceSpans) bool {
 			rss.ScopeSpans().RemoveIf(func(sps ptrace.ScopeSpans) bool {

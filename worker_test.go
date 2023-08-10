@@ -29,11 +29,11 @@ func TestNormal(t *testing.T) {
 
 func TestWorkerPool(t *testing.T) {
 	wp := NewWorkerPool(5)
-	//开启数据
+	//Run
 	go func() {
 		wp.Run(context.TODO())
 	}()
-	//等待线程池的创建
+	//Waiting for the creation of thread pool
 	time.Sleep(2 * time.Second)
 	fns := mockTasks(10)
 	for i, fn := range fns {
@@ -47,7 +47,7 @@ func BenchmarkWorkerPool_Execute(b *testing.B) {
 	go func() {
 		wp.Run(context.TODO())
 	}()
-	//等待线程池的创建
+	//Waiting for the creation of thread pool
 	time.Sleep(time.Second)
 	fns := mockTasks(1000)
 	for i, fn := range fns {
